@@ -9,6 +9,7 @@
 #define CHECK_BIT(REG, BITNO) (*(REG) & (1 << BITNO))
 
 #define MODIFY_REG(REG, MODIFYMASK, VALUE) (*(REG) |= ((MODIFYMASK) & (VALUE)))
+#define CHECK_REG(REG, MODIFYMASK) (*(REG) & (MODIFYMASK))
 
 //---------------
 // RCC Registers
@@ -23,8 +24,31 @@
 
 #define REG_RCC_CR_HSEON 16
 #define REG_RCC_CR_HSERDY 17
+#define REG_RCC_CR_PLLON 24
+#define REG_RCC_CR_PLLRDY 25
 
 #define REG_RCC_AHBENR_IOPCEN 19
+
+#define REG_RCC_CFGR2_PREDIV 0
+#define REG_RCC_CFGR2_PREDIV_DIV_2 0b0001
+
+#define REG_RCC_CFGR_PLLSRC 15
+#define REG_RCC_CFGR_PLLSRC_HSE_PREDIV 0b10
+
+#define REG_RCC_CFGR_PLLMUL 18
+#define REG_RCC_CFGR_PLLMUL_12 0b1010
+
+#define REG_RCC_CFGR_HPRE 4
+#define REG_RCC_CFGR_HPRE_NOT_DIV 0b0000
+
+#define REG_RCC_CFGR_SW 0
+#define REG_RCC_CFGR_SW_PLL 10
+
+#define REG_RCC_CFGR_SWS 2
+#define REG_RCC_CFGR_SWS_PLL 10
+
+#define REG_RCC_CFGR_PPRE 8
+#define REG_RCC_CFGR_PPRE_DIV_2 100
 
 //----------------
 // GPIO Registers
@@ -59,28 +83,30 @@ void board_clocking_init()
 
     // (2) Configure PLL:
     // PREDIV output: HSE/2 = 4 MHz
-    *REG_RCC_CFGR2 |= 1U;
+    MODIFY_REG(REG_RCC_CFGR2, 0b1111 << REG_RCC_CFGR2_PREDIV, REG_RCC_CFGR2_PREDIV_DIV_2);
 
     // (3) Select PREDIV output as PLL input (4 MHz):
-    *REG_RCC_CFGR |= 0x00010000U;
+    MODIFY_REG(REG_RCC_CFGR, 0b11 < REG_RCC_CFGR_PLLSRC, REG_RCC_CFGR_PLLSRC_HSE_PREDIV);
 
     // (4) Set PLLMUL to 12:
     // SYSCLK frequency = 48 MHz
-    *REG_RCC_CFGR |= (12U-2U) << 18U;
+    MODIFY_REG(REG_RCC_CFGR, 0b1111 << REG_RCC_CFGR_PLLMUL, REG_RCC_CFGR_PLLMUL_12);
 
     // (5) Enable PLL:
-    *REG_RCC_CR |= 0x01000000U;
-    while ((*REG_RCC_CR & 0x02000000U) != 0x02000000U);
+    SET_BIT(REG_RCC_CR, REG_RCC_CR_PLLON);
+    while(CHECK_BIT(REG_RCC_CR, REG_RCC_CR_PLLRDY))
+        continue;
 
     // (6) Configure AHB frequency to 48 MHz:
-    *REG_RCC_CFGR |= 0b000U << 4U;
+    MODIFY_REG(REG_RCC_CFGR, 0b1111 << REG_RCC_CFGR_HPRE, REG_RCC_CFGR_HPRE_NOT_DIV);
 
     // (7) Select PLL as SYSCLK source:
-    *REG_RCC_CFGR |= 0b10U;
-    while ((*REG_RCC_CFGR & 0xCU) != 0x8U);
+    MODIFY_REG(REG_RCC_CFGR, 0b11 << REG_RCC_CFGR_SW, REG_RCC_CFGR_SW_PLL);
+    while(CHECK_REG(REG_RCC_CFGR, 0b11 << REG_RCC_CFGR_SWS) != REG_RCC_CFGR_SWS_PLL)
+        continue;
 
     // (8) Set APB frequency to 24 MHz
-    *REG_RCC_CFGR |= 0b001U << 8U;
+    MODIFY_REG(REG_RCC_CFGR, 0b111 << REG_RCC_CFGR_PPRE, REG_RCC_CFGR_PPRE_DIV_2);
 }
 
 void board_gpio_init()
