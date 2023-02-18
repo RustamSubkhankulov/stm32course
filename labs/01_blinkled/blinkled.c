@@ -15,6 +15,8 @@
 // RCC Registers
 //---------------
 
+// RESET AND CLOCK CONTROL
+
 #define REG_RCC 0x40021000U
 
 #define REG_RCC_CR     (volatile uint32_t*)(uintptr_t)(REG_RCC + 0x00) // Clock Control Register
