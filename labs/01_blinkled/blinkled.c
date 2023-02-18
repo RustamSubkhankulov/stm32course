@@ -24,50 +24,64 @@
 #define REG_RCC_AHBENR (volatile uint32_t*)(uintptr_t)(REG_RCC + 0x14) // AHB1 Peripheral Clock Enable Register
 #define REG_RCC_CFGR2  (volatile uint32_t*)(uintptr_t)(REG_RCC + 0x2C) // Clock configuration register 2
 
-#define REG_RCC_CR_HSEON 16
-#define REG_RCC_CR_HSERDY 17
-#define REG_RCC_CR_PLLON 24
-#define REG_RCC_CR_PLLRDY 25
+#define REG_RCC_CR_HSEON  16 // HSE clock enable
+#define REG_RCC_CR_HSERDY 17 // HSE clock ready flag
+#define REG_RCC_CR_PLLON  24 // PLL enable
+#define REG_RCC_CR_PLLRDY 25 // PLL clock ready flag
 
-#define REG_RCC_AHBENR_IOPCEN 19
+// I/O port C clock enable
+#define REG_RCC_AHBENR_IOPCEN 19 
 
-#define REG_RCC_CFGR2_PREDIV 0
-#define REG_RCC_CFGR2_PREDIV_DIV_2 0b0001
+// PREDIV division factor
+#define REG_RCC_CFGR2_PREDIV 0             // offset
+#define REG_RCC_CFGR2_PREDIV_DIV_2 0b0001 // value 
 
-#define REG_RCC_CFGR_PLLSRC 15
-#define REG_RCC_CFGR_PLLSRC_HSE_PREDIV 0b10
+// PLL input clock source
+#define REG_RCC_CFGR_PLLSRC 15               // offset
+#define REG_RCC_CFGR_PLLSRC_HSE_PREDIV 0b10 // value
 
-#define REG_RCC_CFGR_PLLMUL 18
-#define REG_RCC_CFGR_PLLMUL_12 0b1010
+// PLL multiplication factor
+#define REG_RCC_CFGR_PLLMUL 18         // offset
+#define REG_RCC_CFGR_PLLMUL_12 0b1010 // value 
 
-#define REG_RCC_CFGR_HPRE 4
-#define REG_RCC_CFGR_HPRE_NOT_DIV 0b0000
+// HCLK prescaler
+#define REG_RCC_CFGR_HPRE 4               // offset
+#define REG_RCC_CFGR_HPRE_NOT_DIV 0b0000 // value 
 
-#define REG_RCC_CFGR_SW 0
-#define REG_RCC_CFGR_SW_PLL 10
+// System clock switch
+#define REG_RCC_CFGR_SW 0       // offset
+#define REG_RCC_CFGR_SW_PLL 10 // value
 
-#define REG_RCC_CFGR_SWS 2
-#define REG_RCC_CFGR_SWS_PLL 10
+// System clock switch status
+#define REG_RCC_CFGR_SWS 2       // offset
+#define REG_RCC_CFGR_SWS_PLL 10 // value 
 
-#define REG_RCC_CFGR_PPRE 8
-#define REG_RCC_CFGR_PPRE_DIV_2 100
+// PCLK prescaler
+#define REG_RCC_CFGR_PPRE 8          // offset
+#define REG_RCC_CFGR_PPRE_DIV_2 100 // value 
 
 //----------------
 // GPIO Registers
 //----------------
 
+// GPIO port C registers
 #define GPIOC 0x48000800U
 
-#define GPIOC_MODER (volatile uint32_t*)(uintptr_t)(GPIOC + 0x00) // GPIO port mode register
-#define GPIOC_TYPER (volatile uint32_t*)(uintptr_t)(GPIOC + 0x04) // GPIO port output type register
-#define GPIOC_ODR   (volatile uint32_t*)(uintptr_t)(GPIOC + 0x14) // GPIO port output data register
+// GPIO port mode register
+#define GPIOC_MODER (volatile uint32_t*)(uintptr_t)(GPIOC + 0x00) 
+
+// GPIO port output type register
+#define GPIOC_TYPER (volatile uint32_t*)(uintptr_t)(GPIOC + 0x04) 
+
+// GPIO port output data register
+#define GPIOC_ODR   (volatile uint32_t*)(uintptr_t)(GPIOC + 0x14) 
 
 //------
 // Main
 //------
 
 #define CPU_FREQENCY 48000000U // CPU frequency: 48 MHz
-#define ONE_MILLISECOND CPU_FREQENCY/1000U
+#define ONE_MILLISECOND ( (CPU_FREQENCY) / 1000U)
 
 //------
 // LEDs
@@ -118,10 +132,10 @@ void board_gpio_init()
 
     // (2) Configure PC8 & PC9 mode:
     //(value 01 => General purpose output mode)
-    MODIFY_REG(GPIOC_MODER, 0b11U << (2 * GREEN_LED_GPIOC_PIN), 0b01U << (2 * GREEN_LED_GPIOC_PIN));
+    MODIFY_REG(GPIOC_MODER, 0b11U << (2 * GREEN_LED_GPIOC_PIN), 0b01U << (2 * GREEN_LED_GPIOC_PIN)); // TODO add DSL
     MODIFY_REG(GPIOC_MODER, 0b11U << (2 * BLUE_LED_GPIOC_PIN), 0b01U << (2 * BLUE_LED_GPIOC_PIN));
 
-    // (3) Configure PC8 & PC9 type:
+    // (3) Configure PC8 & PC9 type - output push/pull 
     CLEAR_BIT(GPIOC_TYPER, GREEN_LED_GPIOC_PIN);
     CLEAR_BIT(GPIOC_TYPER, BLUE_LED_GPIOC_PIN);
 }
@@ -149,7 +163,7 @@ int main()
         totally_accurate_quantum_femtosecond_precise_super_delay_3000_1000ms();
 
         CLEAR_BIT(GPIOC_ODR, GREEN_LED_GPIOC_PIN);
-        totally_accurate_quantum_femtosecond_precise_super_delay_3000_1000ms(); // TODO: XOR
+        totally_accurate_quantum_femtosecond_precise_super_delay_3000_1000ms(); 
 
         SET_BIT(GPIOC_ODR, BLUE_LED_GPIOC_PIN);
         totally_accurate_quantum_femtosecond_precise_super_delay_3000_1000ms();
