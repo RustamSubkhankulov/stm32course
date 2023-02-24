@@ -27,14 +27,14 @@ void board_clocking_init()
 
     // (2) Configure PLL:
     // PREDIV output: HSE/2 = 4 MHz
-    MODIFY_REG(REG_RCC_CFGR2, 0b1111 << REG_RCC_CFGR2_PREDIV, REG_RCC_CFGR2_PREDIV_DIV_2 << REG_RCC_CFGR2_PREDIV);
+    SET_REG_RCC_CFGR2_PREDIV(2);
 
     // (3) Select PREDIV output as PLL input (4 MHz):
-    MODIFY_REG(REG_RCC_CFGR, 0b11 << REG_RCC_CFGR_PLLSRC, REG_RCC_CFGR_PLLSRC_HSE_PREDIV << REG_RCC_CFGR_PLLSRC);
+    SET_REG_RCC_CFGR_PLLSRC(REG_RCC_CFGR_PLLSRC_HSE_PREDIV);
 
     // (4) Set PLLMUL to 12:
     // SYSCLK frequency = 48 MHz
-    MODIFY_REG(REG_RCC_CFGR, 0b1111 << REG_RCC_CFGR_PLLMUL, REG_RCC_CFGR_PLLMUL_12 << REG_RCC_CFGR_PLLMUL);
+    SET_REG_RCC_CFGR_PLLMUL(12);
 
     // (5) Enable PLL:
     SET_BIT(REG_RCC_CR, REG_RCC_CR_PLLON);
@@ -42,15 +42,16 @@ void board_clocking_init()
         continue;
 
     // (6) Configure AHB frequency to 48 MHz:
-    MODIFY_REG(REG_RCC_CFGR, 0b1111 << REG_RCC_CFGR_HPRE, REG_RCC_CFGR_HPRE_NOT_DIV << REG_RCC_CFGR_HPRE);
+    SET_REG_RCC_CFGR_HPRE_NOT_DIV();
 
     // (7) Select PLL as SYSCLK source:
-    MODIFY_REG(REG_RCC_CFGR, 0b11 << REG_RCC_CFGR_SW, REG_RCC_CFGR_SW_PLL << REG_RCC_CFGR_SW);
-    while(CHECK_REG(REG_RCC_CFGR, 0b11 << REG_RCC_CFGR_SWS) != REG_RCC_CFGR_SWS_PLL)
+    SET_REG_RCC_CFGR_SW(REG_RCC_CFGR_SW_PLL);
+
+    while(GET_REG_RCC_CFGR_SWS() != REG_RCC_CFGR_SWS_PLL)
         continue;
 
     // (8) Set APB frequency to 24 MHz
-    MODIFY_REG(REG_RCC_CFGR, 0b111 << REG_RCC_CFGR_PPRE, REG_RCC_CFGR_PPRE_DIV_2 << REG_RCC_CFGR_PPRE);
+    SET_REG_RCC_CFGR_PPRE(REG_RCC_CFGR_PPRE_DIV_2);
 }
 
 void board_gpio_init()
@@ -59,18 +60,17 @@ void board_gpio_init()
     SET_BIT(REG_RCC_AHBENR, REG_RCC_AHBENR_IOPCEN);
 
     // (2) Configure PC8 & PC9 mode:
-    //(value 01 => General purpose output mode)
-    MODIFY_REG(GPIOC_MODER, 0b11U << (2 * GREEN_LED_GPIOC_PIN), 0b01U << (2 * GREEN_LED_GPIOC_PIN)); // TODO add DSL
-    MODIFY_REG(GPIOC_MODER, 0b11U << (2 * BLUE_LED_GPIOC_PIN), 0b01U << (2 * BLUE_LED_GPIOC_PIN));
+    SET_GPIO_IOMODE(GPIOC, GREEN_LED_GPIOC_PIN, GPIO_MODE_GEN_PURPOSE_OUTPUT);
+    SET_GPIO_IOMODE(GPIOC, BLUE_LED_GPIOC_PIN, GPIO_MODE_GEN_PURPOSE_OUTPUT);
 
     // (3) Configure PC8 & PC9 type - output push/pull 
-    CLEAR_BIT(GPIOC_TYPER, GREEN_LED_GPIOC_PIN);
-    CLEAR_BIT(GPIOC_TYPER, BLUE_LED_GPIOC_PIN);
+    SET_GPIO_IOTYPE(GPIOC, GREEN_LED_GPIOC_PIN, GPIO_TYPE_PUSH_PULL);
+    SET_GPIO_IOTYPE(GPIOC, BLUE_LED_GPIOC_PIN, GPIO_TYPE_PUSH_PULL);
 }
 
-void totally_accurate_quantum_femtosecond_precise_super_delay_3000_1000ms()
+void totally_accurate_quantum_femtosecond_precise_super_delay_3000_100ms()
 {
-    for (uint32_t i = 0; i < 1000U * ONE_MILLISECOND; ++i)
+    for (uint32_t i = 0; i < 100U * ONE_MILLISECOND; ++i)
     {
         // Insert NOP for power consumption:
         __asm__ volatile("nop");
@@ -87,16 +87,16 @@ int main()
 
     while (1)
     {
-        SET_BIT(GPIOC_ODR, GREEN_LED_GPIOC_PIN);
-        totally_accurate_quantum_femtosecond_precise_super_delay_3000_1000ms();
+        SET_BIT(GPIO_ODR(GPIOC), GREEN_LED_GPIOC_PIN);
+        totally_accurate_quantum_femtosecond_precise_super_delay_3000_100ms();
 
-        CLEAR_BIT(GPIOC_ODR, GREEN_LED_GPIOC_PIN);
-        totally_accurate_quantum_femtosecond_precise_super_delay_3000_1000ms(); 
+        CLEAR_BIT(GPIO_ODR(GPIOC), GREEN_LED_GPIOC_PIN);
+        totally_accurate_quantum_femtosecond_precise_super_delay_3000_100ms(); 
 
-        // SET_BIT(GPIOC_ODR, BLUE_LED_GPIOC_PIN);
-        // totally_accurate_quantum_femtosecond_precise_super_delay_3000_1000ms();
+        SET_BIT(GPIO_ODR(GPIOC), BLUE_LED_GPIOC_PIN);
+        totally_accurate_quantum_femtosecond_precise_super_delay_3000_100ms();
 
-        // CLEAR_BIT(GPIOC_ODR, BLUE_LED_GPIOC_PIN);
-        // totally_accurate_quantum_femtosecond_precise_super_delay_3000_1000ms();
+        CLEAR_BIT(GPIO_ODR(GPIOC), BLUE_LED_GPIOC_PIN);
+        totally_accurate_quantum_femtosecond_precise_super_delay_3000_100ms();
     }
 }

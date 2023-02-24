@@ -40,26 +40,41 @@
 #define REG_RCC_CR_PLLRDY 25 // PLL clock ready flag
 
 #define REG_RCC_CR_HSICAL 8  // HSI clock calibration
-#define GET_REG_RCC_CR_HSICAL(value) MODIFY_REG(REG_RCC_CR, 0b1111111 << REG_RCC_CR_HSICAL, value << REG_RCC_CR_HSICAL)
+#define GET_REG_RCC_CR_HSICAL() SUPER_CHECK_REG(REG_RCC_CR, 0xFF, REG_RCC_CR_HSICAL)
 
-#define REG_RCC_CR_HSITRIM 3
-// #define GET_REG_RCC_CR_HSITRIM(value)  
-// #define SET_REG_RCC_CR_HSITRIM(value) 
+#define REG_RCC_CR_HSITRIM 3 // HSI clock trimming
+#define GET_REG_RCC_CR_HSITRIM() SUPER_CHECK_REG(REG_RCC_CR, 0b11111, REG_RCC_CR_HSITRIM)
+#define SET_REG_RCC_CR_HSITRIM(value) SUPER_MODIFY_REG(REG_RCC_CR, 0b11111, value, REG_RCC_CR_HSITRIM)
 
 //---------------------------------------------------------
 
 // AHBENR
 
-// I/O port C clock enable
-#define REG_RCC_AHBENR_IOPCEN 19 
+#define REG_RCC_AHBENR_TSCEN   24 // Touch sensing controller clock enable
+// Bit 23 reserved
+#define REG_RCC_AHBENR_IOPFEN  22 // I/O port F clock enable
+#define REG_RCC_AHBENR_IOPEEN  21 // I/O port E clock enable
+#define REG_RCC_AHBENR_IOPDEN  20 // I/O port D clock enable
+#define REG_RCC_AHBENR_IOPCEN  19 // I/O port C clock enable
+#define REG_RCC_AHBENR_IOPBEN  18 // I/O port B clock enable
+#define REG_RCC_AHBENR_IOPAEN  17 // I/O port A clock enable
+// Bits 16:7 reserved
+#define REG_RCC_AHBENR_CRCEN   6  // CRC clock enable
+#define REG_RCC_AHBENR_FLITFEN 4  // FLITF clock enable
+#define REG_RCC_AHBENR_SRAMEN  2  // SRAM interface clock enable
+// Bit 3 reserved
+#define REG_RCC_AHBENR_DMA2EN  1  // DMA2 clock enable
+#define REG_RCC_AHBENR_DMAEN   0  // DMA clock enable
 
 //---------------------------------------------------------
 
 // CFGR2
 
-// PREDIV division factor
-#define REG_RCC_CFGR2_PREDIV 0            
-#define REG_RCC_CFGR2_PREDIV_DIV_2 0b0001  
+// Bits 31:4 reserved
+#define REG_RCC_CFGR2_PREDIV 0 // PREDIV division factor     
+
+// Available values: 0b0000 - 0b1111
+#define SET_REG_RCC_CFGR2_PREDIV(value) SUPER_MODIFY_REG(REG_RCC_CFGR2, 0b1111, (value) - 1, 0)
 
 //---------------------------------------------------------
 
@@ -67,24 +82,61 @@
 
 // PLL input clock source
 #define REG_RCC_CFGR_PLLSRC 15               
-#define REG_RCC_CFGR_PLLSRC_HSE_PREDIV 0b10 
+#define SET_REG_RCC_CFGR_PLLSRC(value) SUPER_MODIFY_REG(REG_RCC_CFGR, 0b11, value, REG_RCC_CFGR_PLLSRC)
+#define GET_REG_RCC_CFGR_PLLSRC() SUPER_CHECK_REG(REG_RCC_CFGR, 0b11, REG_RCC_CFGR_PLLSRC)
+
+#define REG_RCC_CFGR_PLLSRC_HSI_DIV_2    0b00 
+#define REG_RCC_CFGR_PLLSRC_HSI_PREDIV   0b01 
+#define REG_RCC_CFGR_PLLSRC_HSE_PREDIV   0b10 
+#define REG_RCC_CFGR_PLLSRC_HSI48_PREDIV 0b10 
 
 // PLL multiplication factor
-#define REG_RCC_CFGR_PLLMUL 18         
-#define REG_RCC_CFGR_PLLMUL_12 0b1010 
+#define REG_RCC_CFGR_PLLMUL 18 
+// Values from 16 to 2
+#define SET_REG_RCC_CFGR_PLLMUL(value) SUPER_MODIFY_REG(REG_RCC_CFGR, 0b1111, (value) - 2, REG_RCC_CFGR_PLLMUL) 
+#define GET_REG_RCC_CFGR_PLLMUL() ((SUPER_CHECK_REG(REG_RCC_CFGR, 0b1111), REG_RCC_CFGR_PLLMUL) + 2)
 
 // HCLK prescaler
-#define REG_RCC_CFGR_HPRE 4               
-#define REG_RCC_CFGR_HPRE_NOT_DIV 0b0000 
+#define REG_RCC_CFGR_HPRE 4      
+#define GET_REG_RCC_CFGR_HPRE() SUPER_CHECK_REG(REG_RCC_CFGR, 0b1111, REG_RCC_CFGR_HPRE) 
+
+#define SET_REG_RCC_CFGR_HPRE_NOT_DIV() SUPER_MODIFY_REG(REG_RCC_CFGR, 0b1111, 0b0000, REG_RCC_CFGR_HPRE)
+#define SET_REG_RCC_CFGR_HPRE_2()       SUPER_MODIFY_REG(REG_RCC_CFGR, 0b1111, 0b1000, REG_RCC_CFGR_HPRE)
+#define SET_REG_RCC_CFGR_HPRE_4()       SUPER_MODIFY_REG(REG_RCC_CFGR, 0b1111, 0b1001, REG_RCC_CFGR_HPRE)
+#define SET_REG_RCC_CFGR_HPRE_8()       SUPER_MODIFY_REG(REG_RCC_CFGR, 0b1111, 0b1010, REG_RCC_CFGR_HPRE)
+#define SET_REG_RCC_CFGR_HPRE_16()      SUPER_MODIFY_REG(REG_RCC_CFGR, 0b1111, 0b1011, REG_RCC_CFGR_HPRE) 
+#define SET_REG_RCC_CFGR_HPRE_64()      SUPER_MODIFY_REG(REG_RCC_CFGR, 0b1111, 0b1100, REG_RCC_CFGR_HPRE) 
+#define SET_REG_RCC_CFGR_HPRE_128()     SUPER_MODIFY_REG(REG_RCC_CFGR, 0b1111, 0b1101, REG_RCC_CFGR_HPRE)
+#define SET_REG_RCC_CFGR_HPRE_256()     SUPER_MODIFY_REG(REG_RCC_CFGR, 0b1111, 0b1110, REG_RCC_CFGR_HPRE)
+#define SET_REG_RCC_CFGR_HPRE_512()     SUPER_MODIFY_REG(REG_RCC_CFGR, 0b1111, 0b1111, REG_RCC_CFGR_HPRE)
 
 // System clock switch
 #define REG_RCC_CFGR_SW 0       
-#define REG_RCC_CFGR_SW_PLL 10 
+#define SET_REG_RCC_CFGR_SW(value) SUPER_MODIFY_REG(REG_RCC_CFGR, 0b11, value, REG_RCC_CFGR_SW)
+#define GET_REG_RCC_CFGR_SW() SUPER_CHECK_REG(REG_RCC_CFGR, 0b11, REG_RCC_CFGR_SW)
+
+#define REG_RCC_CFGR_SW_HSI   0b00 
+#define REG_RCC_CFGR_SW_HSE   0b01 
+#define REG_RCC_CFGR_SW_PLL   0b10 
+#define REG_RCC_CFGR_SW_HSI48 0b11 
 
 // System clock switch status
 #define REG_RCC_CFGR_SWS 2       
-#define REG_RCC_CFGR_SWS_PLL 10  
+#define SET_REG_RCC_CFGR_SWS(value) SUPER_MODIFY_REG(REG_RCC_CFGR, 0b11, value, REG_RCC_CFGR_SWS)
+#define GET_REG_RCC_CFGR_SWS() SUPER_CHECK_REG(REG_RCC_CFGR, 0b11, REG_RCC_CFGR_SWS)
+
+#define REG_RCC_CFGR_SWS_HSI   0b00 
+#define REG_RCC_CFGR_SWS_HSE   0b01 
+#define REG_RCC_CFGR_SWS_PLL   0b10 
+#define REG_RCC_CFGR_SWS_HSI48 0b11  
 
 // PCLK prescaler
 #define REG_RCC_CFGR_PPRE 8          
-#define REG_RCC_CFGR_PPRE_DIV_2 100  
+#define SET_REG_RCC_CFGR_PPRE(value) SUPER_MODIFY_REG(REG_RCC_CFGR, 0b111, value, REG_RCC_CFGR_PPRE)
+#define GET_REG_RCC_CFGR_PPRE() SUPER_CHECK_REG(REG_RCC_CFGR, 0b111, REG_RCC_CFGR_PPRE)
+
+#define REG_RCC_CFGR_PPRE_NOT_DIV 0b000 
+#define REG_RCC_CFGR_PPRE_DIV_2   0b100 
+#define REG_RCC_CFGR_PPRE_DIV_4   0b101
+#define REG_RCC_CFGR_PPRE_DIV_8   0b110
+#define REG_RCC_CFGR_PPRE_DIV_16  0b111
