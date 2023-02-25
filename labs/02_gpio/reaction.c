@@ -3,14 +3,16 @@
 
 //---------------------------------------------------------
 
-#include "inc/7seg.h"
+#include "inc/seg7.h"
 #include "inc/gpio.h"
 #include "inc/rcc.h"
 
 //=========================================================
 
 #define CPU_FREQENCY 48000000U // CPU frequency: 48 MHz
-#define ONE_MILLISECOND CPU_FREQENCY/1000U
+#define ONE_MILLISECOND CPU_FREQENCY / 1000U
+
+#define BUTTON_PIN 0
 
 //=========================================================
 
@@ -72,7 +74,7 @@ static void to_get_more_accuracy_pay_2202_2013_2410_3805_1ms()
 static void board_gpio_init()
 {
     // (1) Configure PA1-PA12 as output:
-    *REG_RCC_AHBENR |= (1U << 17U);
+    SET_BIT(REG_RCC_AHBENR, REG_RCC_AHBENR_IOPAEN);
 
     // Configure mode register:
     for (unsigned pin = 1; pin <= 12; pin++)
@@ -87,10 +89,10 @@ static void board_gpio_init()
     }
 
     // (2) Configure PA0 as button:
-    SET_GPIO_IOMODE(GPIOA, 0, GPIO_IOMODE_INPUT);
+    SET_GPIO_IOMODE(GPIOA, BUTTON_PIN, GPIO_IOMODE_INPUT);
 
     // Configure PA0 as pull-down pin:
-    SET_GPIO_PUPD(GPIOA, 0, GPIO_PUPD_PD);
+    SET_GPIO_PUPD(GPIOA, BUTTON_PIN, GPIO_PUPD_PD);
 }
 
 //------

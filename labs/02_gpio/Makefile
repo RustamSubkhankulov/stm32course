@@ -35,7 +35,7 @@ endif
 SOURCES = \
 	entry.S \
 	reaction.c \
-	7seg.c
+	seg7.c
 
 OBJECTS_HALFWAY_DONE = $(SOURCES:%.c=build/%.o)
 OBJECTS              = $(OBJECTS_HALFWAY_DONE:%.S=build/%.o)
