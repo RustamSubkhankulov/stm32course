@@ -87,16 +87,16 @@ int main()
 
     while (1)
     {
-        SET_BIT(GPIO_ODR(GPIOC), GREEN_LED_GPIOC_PIN);
+        GPIO_BSRR_SET_PIN(GPIOC, GREEN_LED_GPIOC_PIN);
         totally_accurate_quantum_femtosecond_precise_super_delay_3000_100ms();
 
-        CLEAR_BIT(GPIO_ODR(GPIOC), GREEN_LED_GPIOC_PIN);
+        GPIO_BRR_RESET_PIN(GPIOC, GREEN_LED_GPIOC_PIN);
         totally_accurate_quantum_femtosecond_precise_super_delay_3000_100ms(); 
 
-        SET_BIT(GPIO_ODR(GPIOC), BLUE_LED_GPIOC_PIN);
+        GPIO_BSRR_SET_PIN(GPIOC, BLUE_LED_GPIOC_PIN);
         totally_accurate_quantum_femtosecond_precise_super_delay_3000_100ms();
 
-        CLEAR_BIT(GPIO_ODR(GPIOC), BLUE_LED_GPIOC_PIN);
+        GPIO_BRR_RESET_PIN(GPIOC, BLUE_LED_GPIOC_PIN);
         totally_accurate_quantum_femtosecond_precise_super_delay_3000_100ms();
     }
 }

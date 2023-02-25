@@ -14,6 +14,8 @@
 #define GPIOE 0x48001000U
 #define GPIOF 0x48001400U
 
+//---------------------------------------------------------
+
 #define GPIO_MODER(GPIO)   (volatile uint32_t*)(uintptr_t)(GPIO + 0x00) 
 #define GPIO_OTYPER(GPIO)  (volatile uint32_t*)(uintptr_t)(GPIO + 0x04) 
 #define GPIO_OSPEEDR(GPIO) (volatile uint32_t*)(uintptr_t)(GPIO + 0x08) 
@@ -28,6 +30,8 @@
 
 //---------------------------------------------------------
 
+// Modes
+
 #define GPIO_MODE_INPUT              0b00
 #define GPIO_MODE_GEN_PURPOSE_OUTPUT 0b01
 #define GPIO_MODE_ALT_FUNC           0b10
@@ -38,8 +42,27 @@
 
 //---------------------------------------------------------
 
+// Types
+
 #define GPIO_TYPE_PUSH_PULL  0b0
 #define GPIO_TYPE_OPEN_DRAIN 0b1
 
 #define SET_GPIO_IOTYPE(GPIO, PORT, TYPE) SUPER_MODIFY_REG(GPIO_OTYPER(GPIO), 0b1, TYPE, PORT)
 #define GET_GPIO_IOTYPE(GPIO, PORT) SUPER_CHECK_REG(GPIO_OTYPER(GPIO), 0b1, PORT)
+
+//---------------------------------------------------------
+
+// ODR
+
+#define GPIO_ODR_WRITE(GPIO, VALUE) (*(GPIO_ODR(GPIO)) = VALUE)
+#define GPIO_ODR_READ(GPIO) (*(GPIO_ODR(GPIO)))
+
+#define GPIO_ODR_SET_PIN(GPIO, PIN) SET_BIT(GPIO_ODR(GPIO), PIN)
+#define GPIO_ODR_RESET_PIN(GPIO, PIN) CLEAR_BIT(GPIO_ODR(GPIO), PIN)
+
+//---------------------------------------------------------
+
+// BSRR/BRR
+
+#define GPIO_BSRR_SET_PIN(GPIO, PIN) SET_BIT(GPIO_BSRR(GPIO), PIN)
+#define GPIO_BRR_RESET_PIN(GPIO, PIN) SET_BIT(GPIO_BRR(GPIO), PIN)
