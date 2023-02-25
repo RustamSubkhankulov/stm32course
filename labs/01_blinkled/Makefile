@@ -69,7 +69,7 @@ QEMU_FLAGS = \
 	-kernel $(EXECUTABLE_FLASH) \
 	-serial stdio \
 	-m 32M \
-	-icount 25 \
+	-icount 1 \
 	-gdb tcp::1234
 
 GDB_FLAGS = \
