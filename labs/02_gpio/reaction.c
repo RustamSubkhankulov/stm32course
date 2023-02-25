@@ -1,14 +1,26 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+//---------------------------------------------------------
+
 #include "inc/7seg.h"
 #include "inc/gpio.h"
 #include "inc/rcc.h"
 
+//=========================================================
+
 #define CPU_FREQENCY 48000000U // CPU frequency: 48 MHz
 #define ONE_MILLISECOND CPU_FREQENCY/1000U
 
-void board_clocking_init()
+//=========================================================
+
+static void board_clocking_init();
+static void to_get_more_accuracy_pay_2202_2013_2410_3805_1ms();
+static void board_gpio_init();
+
+//=========================================================
+
+static void board_clocking_init()
 {
     // (1) Clock HSE and wait for oscillations to setup.
     SET_BIT(REG_RCC_CR, REG_RCC_CR_HSEON);
@@ -44,7 +56,7 @@ void board_clocking_init()
     SET_REG_RCC_CFGR_PPRE(REG_RCC_CFGR_PPRE_DIV_2);
 }
 
-void to_get_more_accuracy_pay_2202_2013_2410_3805_1ms()
+static void to_get_more_accuracy_pay_2202_2013_2410_3805_1ms()
 {
     for (uint32_t i = 0; i < ONE_MILLISECOND/3U; ++i)
     {
@@ -57,7 +69,7 @@ void to_get_more_accuracy_pay_2202_2013_2410_3805_1ms()
 // GPIO configuration
 //--------------------
 
-void board_gpio_init()
+static void board_gpio_init()
 {
     // (1) Configure PA1-PA12 as output:
     *REG_RCC_AHBENR |= (1U << 17U);
@@ -88,7 +100,6 @@ void board_gpio_init()
 int main()
 {
     board_clocking_init();
-
     board_gpio_init();
 
     // Init display rendering:
@@ -122,7 +133,7 @@ int main()
         }
 
         // Update display state:
-        if (!button_was_pressed && (tick % 10U) == 0U)
+        if (!button_was_pressed && (tick % 100U) == 0U)
         {
             if (seg7.number < 9999U)
             {

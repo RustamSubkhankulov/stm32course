@@ -32,10 +32,10 @@ static const uint32_t DIGITS[10] =
 {
     A|B|C|D|E|F,   // 0
     B|C,           // 1
-    A|C|D|F|G,     // 2
+    A|B|D|E|G,   // 2
     A|B|C|D|G,     // 3
     B|C|F|G,       // 4
-    A|B|D|E|G,     // 5
+    A|C|D|F|G,     // 5
     A|C|D|E|F|G,   // 6
     A|B|C,         // 7
     A|B|C|D|E|F|G, // 8
