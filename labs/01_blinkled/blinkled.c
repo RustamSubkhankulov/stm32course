@@ -1,5 +1,7 @@
 #include <stdint.h>
 
+// TODO 16/32 bits 
+
 //---------------------------------------------------------
 
 #include "inc/modregs.h"
@@ -60,12 +62,12 @@ void board_gpio_init()
     SET_BIT(REG_RCC_AHBENR, REG_RCC_AHBENR_IOPCEN);
 
     // (2) Configure PC8 & PC9 mode:
-    SET_GPIO_IOMODE(GPIOC, GREEN_LED_GPIOC_PIN, GPIO_MODE_GEN_PURPOSE_OUTPUT);
-    SET_GPIO_IOMODE(GPIOC, BLUE_LED_GPIOC_PIN, GPIO_MODE_GEN_PURPOSE_OUTPUT);
+    SET_GPIO_IOMODE(GPIOC, GREEN_LED_GPIOC_PIN, GPIO_IOMODE_GEN_PURPOSE_OUTPUT);
+    SET_GPIO_IOMODE(GPIOC, BLUE_LED_GPIOC_PIN, GPIO_IOMODE_GEN_PURPOSE_OUTPUT);
 
     // (3) Configure PC8 & PC9 type - output push/pull 
-    SET_GPIO_IOTYPE(GPIOC, GREEN_LED_GPIOC_PIN, GPIO_TYPE_PUSH_PULL);
-    SET_GPIO_IOTYPE(GPIOC, BLUE_LED_GPIOC_PIN, GPIO_TYPE_PUSH_PULL);
+    SET_GPIO_OTYPE(GPIOC, GREEN_LED_GPIOC_PIN, GPIO_OTYPE_PUSH_PULL);
+    SET_GPIO_OTYPE(GPIOC, BLUE_LED_GPIOC_PIN, GPIO_OTYPE_PUSH_PULL);
 }
 
 void totally_accurate_quantum_femtosecond_precise_super_delay_3000_100ms()
