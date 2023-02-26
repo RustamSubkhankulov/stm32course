@@ -11,15 +11,65 @@
 
 //=========================================================
 
+#define BLUE_LED_GPIOC_PIN  8U
+#define GREEN_LED_GPIOC_PIN 9U
+
+#define COOLDOWN_TICKS 10000U
+
+//=========================================================
+
+struct Player
+{
+    struct Button btn;
+
+    uint32_t led_port;
+    uint16_t led_pin;
+    
+    uint8_t score;
+
+    bool prev;
+    bool cur;
+
+    bool led_is_on;
+};
+
+//=========================================================
+
 static void board_clocking_init(void);
+static void gpio_init_leds(void);
 static int play_fingers_game(void);
+
+static int player_setup(struct Player* player, uint32_t led_port, uint16_t led_pin, uint32_t btn_port, uint16_t btn_pin);
+static void player_turn_off_led(struct Player* player);
+static void player_turn_on_led(struct Player* player);
+static void player_switch_led(struct Player* player);
+static int player_poll_events(struct Player* player);
 
 //=========================================================
 
 int main(void)
 {
     board_clocking_init();
+    gpio_init_leds();
     return play_fingers_game();
+}
+
+//---------------------------------------------------------
+
+static void gpio_init_leds(void)
+{
+    // (1) Enable GPIOC clocking:
+    SET_BIT(REG_RCC_AHBENR, REG_RCC_AHBENR_IOPCEN);
+
+    // (2) Configure PC8 & PC9 mode:
+    SET_GPIO_IOMODE(GPIOC, GREEN_LED_GPIOC_PIN, GPIO_IOMODE_GEN_PURPOSE_OUTPUT);
+    SET_GPIO_IOMODE(GPIOC, BLUE_LED_GPIOC_PIN, GPIO_IOMODE_GEN_PURPOSE_OUTPUT);
+
+    // (3) Configure PC8 & PC9 type - output push/pull 
+    SET_GPIO_OTYPE(GPIOC, GREEN_LED_GPIOC_PIN, GPIO_OTYPE_PUSH_PULL);
+    SET_GPIO_OTYPE(GPIOC, BLUE_LED_GPIOC_PIN, GPIO_OTYPE_PUSH_PULL);
+
+    return;
 }
 
 //---------------------------------------------------------
@@ -62,36 +112,166 @@ static void board_clocking_init(void)
 
 //---------------------------------------------------------
 
+static int player_setup(struct Player* player, uint32_t led_port, uint16_t led_pin, uint32_t btn_port, uint16_t btn_pin)
+{
+    if (player == NULL)
+        return -1;
+
+    player->cur  = false;
+    player->prev = false;
+    player->score = 0;
+
+    player->led_port = led_port;
+    player->led_pin = led_pin;
+
+    return button_setup(&(player->btn), btn_port, btn_pin);
+}
+
+//---------------------------------------------------------
+
+static void player_switch_led(struct Player* player)
+{
+    if (player == NULL)
+        return;
+
+    if (player->led_is_on == true)
+        player_turn_off_led(player);
+    else 
+        player_turn_on_led(player);
+
+    return;
+}
+
+//---------------------------------------------------------
+
+static void player_turn_off_led(struct Player* player)
+{
+    if (player == NULL)
+        return;
+
+    GPIO_BRR_RESET_PIN(player->led_port, player->led_pin);
+    player->led_is_on = false;
+}
+
+//---------------------------------------------------------
+
+static void player_turn_on_led(struct Player* player)
+{
+    if (player == NULL)
+        return;
+
+    GPIO_BSRR_SET_PIN(player->led_port, player->led_pin);
+    player->led_is_on = true;
+}
+
+//---------------------------------------------------------
+
+static int player_poll_events(struct Player* player)
+{
+    if (player == NULL)
+        return -1;
+
+    int err = button_update(&(player->btn));
+    if (err < 0) return err;   
+
+    player->cur = button_is_pressed(&(player->btn));
+    return 0;
+}
+
+//---------------------------------------------------------
+
+// TODO divide into functions
+
 static int play_fingers_game(void)
 {
+    int err = 0;
+
     struct Seg7Display seg7 = { 0 };
-    
-    int err = seg7_setup(&seg7, GPIOA);
+    err = seg7_setup(&seg7, GPIOA);
     if (err < 0) return err;
 
-    struct Button turn_off_button = { 0 };
+    struct Player player1 = { 0 };
+    err = player_setup(&player1, GPIOC, GREEN_LED_GPIOC_PIN, GPIOC, 10);
+    if (err < 0) return err;
 
-    err = button_setup(&turn_off_button, GPIOA, 0);
+    struct Player player2  = { 0 };
+    err = player_setup(&player1, GPIOC, BLUE_LED_GPIOC_PIN, GPIOC, 12);
     if (err < 0) return err;
 
     uint32_t tick = 0U;
+    uint32_t cooldown = 0U;
+    uint8_t winner = 0U;
     seg7.number = 0U;
-    bool is_pressed = false;
 
     while (1)
     {
-        err = button_update(&turn_off_button);
-        if (err < 0) return err;
+        // 1) Update buttons' state and update current players' actions
 
-        is_pressed = is_pressed || button_is_pressed(&turn_off_button);
-
-        if (!is_pressed && (tick % 100U) == 0U)
+        if (cooldown == 0U)
         {
-            if (seg7.number < SEG7_MAX_NUMBER)
+            err = player_poll_events(&player1);
+            if (err < 0) return err;
+
+            err = player_poll_events(&player2);
+            if (err < 0) return err;
+
+            // 2) decide who won
+
+            if (player1.prev == true  && player1.cur == true 
+            && player2.prev == false && player2.cur == true)
             {
-                seg7.number += 1U;
+                // 2nd player won
+
+                winner = 2U;
+                player2.score += 1;
+                cooldown += COOLDOWN_TICKS;
+            }
+            else if (player1.prev == false && player1.cur == true
+                && player2.prev == true  && player2.cur == true)
+            {
+                // 1st player won
+
+                winner = 1U;
+                player1.score += 1;
+                cooldown += COOLDOWN_TICKS;
+            }
+
+            player1.prev = player1.cur;
+            player2.prev = player2.cur;
+        }
+        else 
+        {
+            uint32_t rate1 = 0;
+            uint32_t rate2 = 0;
+
+            if (winner == 1U)
+            {
+                rate1 = 10; // High freq
+                rate2 = 100; // Low freq
+            }
+            else // winner == 2U
+            {
+                rate1 = 100; // Low freq
+                rate2 = 10; // High freq
+            }
+
+            if ((tick % rate1) == 0)
+                player_switch_led(&player1);
+
+            if ((tick % rate2) == 0)
+                player_switch_led(&player2);
+
+            cooldown -= 1;
+            if (cooldown == 0)
+            {
+                player_turn_off_led(&player1);
+                player_turn_off_led(&player2);
             }
         }
+
+        // 3) Show current score
+        // Seg7: NN:MM, where NN == player1.score and MM == player2.score
+        seg7.number = (player1.score % 100) * 100 + (player2.score % 100);
 
         err = seg7_select_digit(&seg7, (tick % 4));
         if (err < 0) return err;
