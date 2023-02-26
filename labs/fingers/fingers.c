@@ -76,17 +76,16 @@ static int play_fingers_game(void)
 
     uint32_t tick = 0U;
     seg7.number = 0U;
+    bool is_pressed = false;
 
     while (1)
     {
         err = button_update(&turn_off_button);
         if (err < 0) return err;
 
-        bool is_pressed = button_is_pressed(&turn_off_button);
-        if (is_pressed == true)
-            break;
+        is_pressed = is_pressed || button_is_pressed(&turn_off_button);
 
-        if ((tick % 100U) == 0U)
+        if (!is_pressed && (tick % 100U) == 0U)
         {
             if (seg7.number < SEG7_MAX_NUMBER)
             {
