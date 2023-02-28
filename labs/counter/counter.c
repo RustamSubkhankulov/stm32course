@@ -71,7 +71,7 @@ static int execute_counter(void)
 
     struct Button turn_off_button = { 0 };
 
-    err = button_setup(&turn_off_button, GPIOA, 0);
+    err = button_setup(&turn_off_button, GPIOB, 4);
     if (err < 0) return err;
 
     uint32_t tick = 0U;

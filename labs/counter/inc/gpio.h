@@ -14,6 +14,8 @@
 #define GPIOE 0x48001000U
 #define GPIOF 0x48001400U
 
+#define GPIO_offs 0x400
+
 //---------------------------------------------------------
 
 #define GPIO_MODER(GPIOx)   (volatile uint32_t*)(uintptr_t)(GPIOx + 0x00) 
