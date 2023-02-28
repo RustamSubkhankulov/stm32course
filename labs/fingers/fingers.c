@@ -14,7 +14,7 @@
 #define BLUE_LED_GPIOC_PIN  8U
 #define GREEN_LED_GPIOC_PIN 9U
 
-#define COOLDOWN_TICKS 10000U
+#define COOLDOWN_TICKS 500U
 
 //=========================================================
 
@@ -22,7 +22,7 @@ struct Player
 {
     struct Button btn;
 
-    volatile uint32_t* led_port;
+    uint32_t led_port;
     uint16_t led_pin;
     
     uint8_t score;
@@ -39,8 +39,8 @@ static void board_clocking_init(void);
 static void gpio_init_leds(void);
 static int play_fingers_game(void);
 
-static int player_setup(struct Player* player, volatile uint32_t* led_port, uint16_t led_pin, 
-                                               volatile uint32_t* btn_port, uint16_t btn_pin);
+static int player_setup(struct Player* player, uint32_t led_port, uint16_t led_pin, 
+                                               uint32_t btn_port, uint16_t btn_pin);
 static void player_turn_off_led(struct Player* player);
 static void player_turn_on_led(struct Player* player);
 static void player_switch_led(struct Player* player);
@@ -113,8 +113,8 @@ static void board_clocking_init(void)
 
 //---------------------------------------------------------
 
-static int player_setup(struct Player* player, volatile uint32_t* led_port, uint16_t led_pin, 
-                                               volatile uint32_t* btn_port, uint16_t btn_pin)
+static int player_setup(struct Player* player, uint32_t led_port, uint16_t led_pin, 
+                                               uint32_t btn_port, uint16_t btn_pin)
 {
     if (player == NULL)
         return -1;
@@ -176,7 +176,9 @@ static int player_poll_events(struct Player* player)
     int err = button_update(&(player->btn));
     if (err < 0) return err;   
 
+    player->prev = player->cur;
     player->cur = button_is_pressed(&(player->btn));
+
     return 0;
 }
 
@@ -197,13 +199,15 @@ static int play_fingers_game(void)
     if (err < 0) return err;
 
     struct Player player2  = { 0 };
-    err = player_setup(&player1, GPIOC, BLUE_LED_GPIOC_PIN, GPIOC, 12);
+    err = player_setup(&player2, GPIOC, BLUE_LED_GPIOC_PIN, GPIOC, 12);
     if (err < 0) return err;
 
     uint32_t tick = 0U;
-    uint32_t cooldown = 0U;
-    uint8_t winner = 0U;
     seg7.number = 0U;
+
+    uint32_t cooldown = 0U;
+    uint32_t rate1 = 0;
+    uint32_t rate2 = 0;
 
     while (1)
     {
@@ -220,43 +224,30 @@ static int play_fingers_game(void)
             // 2) decide who won
 
             if (player1.prev == true  && player1.cur == true 
-            && player2.prev == false && player2.cur == true)
+             && player2.prev == false && player2.cur == true)
             {
                 // 2nd player won
 
-                winner = 2U;
                 player2.score += 1;
+
                 cooldown += COOLDOWN_TICKS;
+                rate1 = 100;
+                rate2 = 10;
             }
             else if (player1.prev == false && player1.cur == true
-                && player2.prev == true  && player2.cur == true)
+                  && player2.prev == true  && player2.cur == true)
             {
                 // 1st player won
 
-                winner = 1U;
                 player1.score += 1;
-                cooldown += COOLDOWN_TICKS;
-            }
 
-            player1.prev = player1.cur;
-            player2.prev = player2.cur;
+                cooldown += COOLDOWN_TICKS;
+                rate1 = 10;
+                rate2 = 100;
+            }               
         }
         else 
         {
-            uint32_t rate1 = 0;
-            uint32_t rate2 = 0;
-
-            if (winner == 1U)
-            {
-                rate1 = 10; // High freq
-                rate2 = 100; // Low freq
-            }
-            else // winner == 2U
-            {
-                rate1 = 100; // Low freq
-                rate2 = 10; // High freq
-            }
-
             if ((tick % rate1) == 0)
                 player_switch_led(&player1);
 

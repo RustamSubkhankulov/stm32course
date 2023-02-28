@@ -20,7 +20,7 @@ static void button_gpio_setup(struct Button* button);
 
 //=========================================================
 
-int button_setup(struct Button* button, volatile uint32_t* GPIOx, uint8_t pin)
+int button_setup(struct Button* button, uint32_t GPIOx, uint8_t pin)
 {
     if (button == NULL)
         return BTN_INV_PTR;
@@ -46,7 +46,7 @@ int button_setup(struct Button* button, volatile uint32_t* GPIOx, uint8_t pin)
 
 static void button_gpio_setup(struct Button* button)
 {
-    uint8_t bit = REG_RCC_AHBENR_IOPAEN + (button->GPIOx - GPIOA);
+    uint8_t bit = REG_RCC_AHBENR_IOPAEN + (button->GPIOx - GPIOA) / GPIO_offs;
     bool clock_e = (bool) CHECK_BIT(REG_RCC_AHBENR, bit);
 
     if (clock_e == false)

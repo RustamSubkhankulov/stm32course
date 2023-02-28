@@ -7,12 +7,14 @@
 //=========================================================
 
 // GPIO ports
-#define GPIOA (volatile uint32_t*)(uintptr_t)0x48000000U
-#define GPIOB (volatile uint32_t*)(uintptr_t)0x48000400U
-#define GPIOC (volatile uint32_t*)(uintptr_t)0x48000800U
-#define GPIOD (volatile uint32_t*)(uintptr_t)0x48000C00U
-#define GPIOE (volatile uint32_t*)(uintptr_t)0x48001000U
-#define GPIOF (volatile uint32_t*)(uintptr_t)0x48001400U
+#define GPIOA 0x48000000U
+#define GPIOB 0x48000400U
+#define GPIOC 0x48000800U
+#define GPIOD 0x48000C00U
+#define GPIOE 0x48001000U
+#define GPIOF 0x48001400U
+
+#define GPIO_offs 0x400
 
 //---------------------------------------------------------
 
