@@ -22,7 +22,7 @@ struct Player
 {
     struct Button btn;
 
-    uint32_t led_port;
+    volatile uint32_t* led_port;
     uint16_t led_pin;
     
     uint8_t score;
@@ -39,7 +39,8 @@ static void board_clocking_init(void);
 static void gpio_init_leds(void);
 static int play_fingers_game(void);
 
-static int player_setup(struct Player* player, uint32_t led_port, uint16_t led_pin, uint32_t btn_port, uint16_t btn_pin);
+static int player_setup(struct Player* player, volatile uint32_t* led_port, uint16_t led_pin, 
+                                               volatile uint32_t* btn_port, uint16_t btn_pin);
 static void player_turn_off_led(struct Player* player);
 static void player_turn_on_led(struct Player* player);
 static void player_switch_led(struct Player* player);
@@ -112,7 +113,8 @@ static void board_clocking_init(void)
 
 //---------------------------------------------------------
 
-static int player_setup(struct Player* player, uint32_t led_port, uint16_t led_pin, uint32_t btn_port, uint16_t btn_pin)
+static int player_setup(struct Player* player, volatile uint32_t* led_port, uint16_t led_pin, 
+                                               volatile uint32_t* btn_port, uint16_t btn_pin)
 {
     if (player == NULL)
         return -1;

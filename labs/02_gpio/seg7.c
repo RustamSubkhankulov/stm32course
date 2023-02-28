@@ -1,5 +1,5 @@
 #include "inc/gpio.h"
-#include "inc/seg7.h"
+#include "seg7.h"
 
 //=========================================================
 
