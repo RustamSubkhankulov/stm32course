@@ -62,7 +62,7 @@ static void seg7_setup_gpio(struct Seg7Display* seg7);
 
 //=========================================================
 
-int seg7_setup(struct Seg7Display* seg7, volatile uint32_t* GPIOx)
+int seg7_setup(struct Seg7Display* seg7, uint32_t GPIOx)
 {
     if (seg7 == NULL)
         return SEG7_INV_PTR;

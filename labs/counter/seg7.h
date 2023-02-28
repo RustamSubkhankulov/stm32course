@@ -14,7 +14,7 @@
 // Display state:
 struct Seg7Display
 {
-    volatile uint32_t* GPIOx;
+    uint32_t GPIOx;
     uint32_t display;
     
     uint16_t number;
@@ -32,7 +32,7 @@ enum Seg7Error
 // sets up gpio, pins from 1 to 12 of GPIOx will be used by Seg7Display
 // WARNING: since this function changes configuration of GPIOx, 
 // consider whole port is used 
-int seg7_setup(struct Seg7Display* seg7, volatile uint32_t* GPIOx);
+int seg7_setup(struct Seg7Display* seg7, uint32_t GPIOx);
 
 // select one particular digit of seg7->number
 int seg7_select_digit(struct Seg7Display* seg7, unsigned pos);
