@@ -83,13 +83,8 @@ int seg7_setup(struct Seg7Display* seg7, uint32_t GPIOx)
 
 static void seg7_setup_gpio(struct Seg7Display* seg7)
 {
-    uint8_t bit = REG_RCC_AHBENR_IOPAEN + (seg7->GPIOx - GPIOA) / GPIO_offs;
-    bool clock_e = (bool) CHECK_BIT(REG_RCC_AHBENR, bit);
-
-    if (clock_e == false)
-    {
-        SET_BIT(REG_RCC_AHBENR, bit);
-    }
+    uint8_t bit = REG_RCC_AHBENR_IOPAEN + (seg7->GPIOx - GPIOA) / GPIO_offs; // TODO
+    SET_BIT(REG_RCC_AHBENR, bit);
 
     // Configure mode register:
     for (uint8_t pin = 1U; pin <= 12U; pin++)
