@@ -9,7 +9,7 @@
 // POSITIONS 0, 1, 2 and 3 can be shown on Seg7Display
 #define SEG7_MAX_POS 3U
 
-#define SEG7_MAX_NUMBER 9999U
+#define SEG7_MAX_NUMBER 99999U
 
 // Display state:
 struct Seg7Display

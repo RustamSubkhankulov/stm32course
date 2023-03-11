@@ -90,77 +90,77 @@ static void board_clocking_init(void)
 
 static int enable_psychosound(void)
 {
-    // int err = 0;
+    int err = 0;
 
-    // struct Seg7Display seg7 = { 0 };
-    // err = seg7_setup(&seg7, GPIOA);
-    // if (err < 0) return err;
+    struct Seg7Display seg7 = { 0 };
+    err = seg7_setup(&seg7, GPIOA);
+    if (err < 0) return err;
 
-    // unsigned freq = 0;
+    unsigned freq = 0;
 
-    // struct Buzzer buzzer = { 0 };
-    // err = buzzer_setup(&buzzer, GPIOC, 10, freq, 100000);
-    // if (err < 0) return err;
+    struct Buzzer buzzer = { 0 };
+    err = buzzer_setup(&buzzer, GPIOC, 10, freq, 100000);
+    if (err < 0) return err;
 
-    // struct Button up = { 0 };
-    // err = button_setup(&up, GPIOB, 6);
-    // if (err < 0) return err;
+    struct Button up = { 0 };
+    err = button_setup(&up, GPIOB, 6);
+    if (err < 0) return err;
 
-    // struct Button down = { 0 };
-    // err = button_setup(&down, GPIOD, 2);
-    // if (err < 0) return err;
+    struct Button down = { 0 };
+    err = button_setup(&down, GPIOD, 2);
+    if (err < 0) return err;
 
-    // uint32_t tick = 0U;
-    // seg7.number = 0U;
+    uint32_t tick = 0U;
+    seg7.number = 0U;
 
-    bool enable = false;
+    // bool enable = false;
 
     while (1)
     {
-        timing_perfect_delay(1000);
+        timing_perfect_delay(1);
 
-        // err = button_update(&up);
-        // if (err < 0) return err;
+        err = button_update(&up);
+        if (err < 0) return err;
 
-        // err = button_update(&down);
-        // if (err < 0) return err;
+        err = button_update(&down);
+        if (err < 0) return err;
 
-        // if ((tick % 1000) == 0)
+        if ((tick % 1000) == 0)
+        {
+            if (button_is_pressed(&up))
+            {
+                if (buzzer.freq < BUZZER_MAX_FREQ - 1000)
+                    buzzer.freq += 1000;
+            }
+
+            if (button_is_pressed(&down))
+            {
+                if (buzzer.freq > 1000)
+                    buzzer.freq -= 1000;
+            }
+        }
+
+        err = buzzer_do_routine(&buzzer, tick);
+        if (err < 0) return err;
+
+        seg7.number = buzzer.freq / 10;
+
+        err = seg7_select_digit(&seg7, (tick % 4));
+        if (err < 0) return err;
+
+        err = seg7_push_display_state_to_mc(&seg7);
+        tick += 1;
+
+        // if (enable)
         // {
-        //     if (button_is_pressed(&up))
-        //     {
-        //         if (buzzer.freq < BUZZER_MAX_FREQ - 10)
-        //             buzzer.freq += 10;
-        //     }
-
-        //     if (button_is_pressed(&down))
-        //     {
-        //         if (buzzer.freq > 10)
-        //             buzzer.freq -= 10;
-        //     }
+        //     GPIO_BSRR_SET_PIN(GPIOC, GREEN_LED_GPIOC_PIN);
+        //     enable = false;
         // }
-
-        // err = buzzer_do_routine(&buzzer, tick);
-        // if (err < 0) return err;
-
-        // seg7.number = buzzer.freq;
-
-        // err = seg7_select_digit(&seg7, (tick % 4));
-        // if (err < 0) return err;
-
-        // err = seg7_push_display_state_to_mc(&seg7);
-        // tick += 1;
-
-        if (enable)
-        {
-            GPIO_BSRR_SET_PIN(GPIOC, GREEN_LED_GPIOC_PIN);
-            enable = false;
-        }
-        else 
-        {
-            GPIO_BRR_RESET_PIN(GPIOC, GREEN_LED_GPIOC_PIN);
-            enable = true;
-        }
+        // else 
+        // {
+        //     GPIO_BRR_RESET_PIN(GPIOC, GREEN_LED_GPIOC_PIN);
+        //     enable = true;
+        // }
     }
 
     return 0;

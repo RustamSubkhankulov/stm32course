@@ -6,7 +6,7 @@
 
 //=========================================================
 
-#define BUZZER_MAX_FREQ 10000U
+#define BUZZER_MAX_FREQ 100000U
 
 // Display state:
 struct Buzzer
