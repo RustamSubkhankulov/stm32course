@@ -56,7 +56,7 @@ int buzzer_do_routine(struct Buzzer* buzzer, uint32_t tick)
     if (buzzer == NULL)
         return BZR_INV_PTR;
 
-    unsigned rate = buzzer->tick_freq / buzzer->freq;
+    unsigned rate = buzzer->tick_freq / (buzzer->freq * 2);
 
     if ((tick % rate) == 0)
     {

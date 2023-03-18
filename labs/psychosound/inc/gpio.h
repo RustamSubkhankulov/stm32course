@@ -67,8 +67,11 @@
 
 // BSRR/BRR
 
-#define GPIO_BSRR_SET_PIN(GPIOx, PIN) SET_BIT(GPIO_BSRR(GPIOx), PIN)
-#define GPIO_BRR_RESET_PIN(GPIOx, PIN) SET_BIT(GPIO_BRR(GPIOx), PIN)
+// #define GPIO_BSRR_SET_PIN(GPIOx, PIN) SET_BIT(GPIO_BSRR(GPIOx), PIN)
+// #define GPIO_BRR_RESET_PIN(GPIOx, PIN) SET_BIT(GPIO_BRR(GPIOx), PIN)
+
+#define GPIO_BSRR_SET_PIN(GPIOx, PIN) (*GPIO_BSRR(GPIOx) = 1 << PIN)
+#define GPIO_BRR_RESET_PIN(GPIOx, PIN) (*GPIO_BRR(GPIOx) = 1 << PIN)
 
 //---------------------------------------------------------
 

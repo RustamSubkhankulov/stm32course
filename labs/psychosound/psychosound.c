@@ -129,14 +129,14 @@ static int enable_psychosound(void)
         {
             if (button_is_pressed(&up))
             {
-                if (buzzer.freq < BUZZER_MAX_FREQ - 1000)
-                    buzzer.freq += 1000;
+                if (buzzer.freq < BUZZER_MAX_FREQ - 100)
+                    buzzer.freq += 100;
             }
 
             if (button_is_pressed(&down))
             {
-                if (buzzer.freq > 1000)
-                    buzzer.freq -= 1000;
+                if (buzzer.freq > 100)
+                    buzzer.freq -= 100;
             }
         }
 
