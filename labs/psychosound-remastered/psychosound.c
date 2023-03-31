@@ -1,36 +1,72 @@
 #include <stdint.h>
-#include <stdbool.h>
 
 //---------------------------------------------------------
 
+#include "seg7.h"
+#include "button.h"
 #include "inc/modregs.h"
 #include "inc/gpio.h"
 #include "inc/rcc.h"
 #include "inc/systick.h"
-
-#include "inc/cringe_sleep.h"
+#include "buzzer.h"
 
 //=========================================================
 
 #define CPU_FREQENCY 48000000U // CPU frequency: 48 MHz
 #define REF_FREQUENCY_DIV 8 // SysTick reference clock frequency: 6MHz
-#define ONE_MILLISECOND 48000U
 
 #define BLUE_LED_GPIOC_PIN  8U
 #define GREEN_LED_GPIOC_PIN 9U
 
-#define SYSTICK_PERIOD_US 100U
-#define SYSTICKS_PER_ONE_SECOND (1000000U / SYSTICK_PERIOD_US)
+#define FREQ_STEP 1U
+#define BUTTON_CHECK_RATE 50U
+
+#define SYSTICK_PERIOD_US 10U
+#define SYSTICK_FREQ (1000000U / SYSTICK_PERIOD_US)
 
 //=========================================================
 
 static void board_clocking_init(void);
-static void board_gpio_init(void);
+static void gpio_init_led(void);
+static int enable_psychosound(void);
 static void systick_init(uint32_t period_us);
 
 //=========================================================
 
-void board_clocking_init()
+static struct Buzzer Buzzer = { 0 };
+static struct Button Up     = { 0 };
+static struct Button Down   = { 0 };
+static struct Seg7Display Seg7 = { 0 };
+
+//=========================================================
+
+int main(void)
+{
+    board_clocking_init();
+    gpio_init_led();
+    systick_init(SYSTICK_PERIOD_US);
+    return enable_psychosound();
+}
+
+//---------------------------------------------------------
+
+static void gpio_init_led(void)
+{
+    // (1) Enable GPIOC clocking:
+    SET_BIT(REG_RCC_AHBENR, REG_RCC_AHBENR_IOPCEN);
+
+    // (2) Configure PC9 mode:
+    SET_GPIO_IOMODE(GPIOC, GREEN_LED_GPIOC_PIN, GPIO_IOMODE_GEN_PURPOSE_OUTPUT);
+
+    // (3) Configure PC9 type - output push/pull 
+    SET_GPIO_OTYPE(GPIOC, GREEN_LED_GPIOC_PIN, GPIO_OTYPE_PUSH_PULL);
+
+    return;
+}
+
+//---------------------------------------------------------
+
+static void board_clocking_init(void)
 {
     // (1) Clock HSE and wait for oscillations to setup.
     SET_BIT(REG_RCC_CR, REG_RCC_CR_HSEON);
@@ -66,27 +102,7 @@ void board_clocking_init()
     SET_REG_RCC_CFGR_PPRE(REG_RCC_CFGR_PPRE_DIV_2);
 }
 
-//--------------------
-// GPIO configuration
-//--------------------
-
-static void board_gpio_init()
-{
-    // (1) Enable GPIOC clocking:
-    SET_BIT(REG_RCC_AHBENR, REG_RCC_AHBENR_IOPCEN);
-
-    // (2) Configure PC8 & PC9 mode:
-    SET_GPIO_IOMODE(GPIOC, GREEN_LED_GPIOC_PIN, GPIO_IOMODE_GEN_PURPOSE_OUTPUT);
-    SET_GPIO_IOMODE(GPIOC, BLUE_LED_GPIOC_PIN, GPIO_IOMODE_GEN_PURPOSE_OUTPUT);
-
-    // (3) Configure PC8 & PC9 type - output push/pull 
-    SET_GPIO_OTYPE(GPIOC, GREEN_LED_GPIOC_PIN, GPIO_OTYPE_PUSH_PULL);
-    SET_GPIO_OTYPE(GPIOC, BLUE_LED_GPIOC_PIN, GPIO_OTYPE_PUSH_PULL);
-}
-
-//-----------------------
-// SysTick configuration
-//-----------------------
+//---------------------------------------------------------
 
 static void systick_init(uint32_t period_us)
 {
@@ -141,46 +157,82 @@ static void systick_init(uint32_t period_us)
     SYSTICK_ENABLE();
 }
 
+//---------------------------------------------------------
+
 void systick_handler(void)
 {
-    static int handler_ticks = 0U;
+    static unsigned handler_ticks = 0U;
+    handler_ticks += 1U;
     static bool led_is_on = false;
 
-    handler_ticks += 1U;
+    button_update(&Up);
+    button_update(&Down);
 
-    if (handler_ticks == SYSTICKS_PER_ONE_SECOND)
+    if ((handler_ticks % SYSTICK_FREQ) == 0)
     {
-        handler_ticks = 0U;
-
         if (!led_is_on)
         {
-            GPIO_BSRR_SET_PIN(GPIOC, BLUE_LED_GPIOC_PIN);
+            GPIO_BSRR_SET_PIN(GPIOC, GREEN_LED_GPIOC_PIN);
             led_is_on = true;
         }
         else 
         {
-            GPIO_BRR_RESET_PIN(GPIOC, BLUE_LED_GPIOC_PIN);
+            GPIO_BRR_RESET_PIN(GPIOC, GREEN_LED_GPIOC_PIN);
             led_is_on = false;
         }
     }
+
+    if ((handler_ticks % BUTTON_CHECK_RATE) == 0)
+    {
+        if (button_is_pressed(&Up))
+        {
+            if (Buzzer.freq < BUZZER_MAX_FREQ - FREQ_STEP)
+                Buzzer.freq += FREQ_STEP;
+        }
+
+        if (button_is_pressed(&Down))
+        {
+            if (Buzzer.freq >= FREQ_STEP)
+                Buzzer.freq -= FREQ_STEP;
+        }
+    }
+
+    buzzer_do_routine(&Buzzer, handler_ticks);
+
+    static unsigned iter = 0;
+
+    if ((handler_ticks % 10) == 0)
+    {   
+        Seg7.number = Buzzer.freq;
+        seg7_select_digit(&Seg7, (iter % 4));
+        seg7_push_display_state_to_mc(&Seg7);
+
+        iter += 1;
+    }
 }
 
-//------
-// Main
-//------
+//---------------------------------------------------------
 
-int main(void)
+static int enable_psychosound(void)
 {
-    board_clocking_init();
-    board_gpio_init();
-    systick_init(SYSTICK_PERIOD_US);
+    int err = 0;
+
+    err = seg7_setup(&Seg7, GPIOA);
+    if (err < 0) return err;
+
+    unsigned freq = 0;
+
+    err = buzzer_setup(&Buzzer, GPIOC, 10, freq, SYSTICK_FREQ);
+    if (err < 0) return err;
+
+    err = button_setup(&Up, GPIOB, 6);
+    if (err < 0) return err;
+
+    err = button_setup(&Down, GPIOD, 2);
+    if (err < 0) return err;
 
     while (1)
-    {
-        more_precise_delay_forbidden_by_quantum_mechanics_1000ms();
-        GPIO_BSRR_SET_PIN(GPIOC, GREEN_LED_GPIOC_PIN);
-        
-        more_precise_delay_forbidden_by_quantum_mechanics_1000ms();
-        GPIO_BRR_RESET_PIN(GPIOC, GREEN_LED_GPIOC_PIN);
-    }
+        continue;
+
+    return 0;
 }
