@@ -35,6 +35,17 @@ SECTIONS
         __data_end_vma = .;
     } >SRAM AT >FLASH
 
+    .bss :
+    {
+        . = ALIGN(4);
+        __bss_start_vma = .;
+
+        *(.bss)
+
+        . = ALIGN(4);
+        __bss_end_vma = .;
+    } > SRAM AT >FLASH
+
     __data_start_lma = LOADADDR(.data);
 
     __stack_start = SRAM_VADDR + SRAM_SIZE;

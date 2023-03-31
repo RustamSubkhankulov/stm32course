@@ -11,8 +11,8 @@
 .section .text
 
 # -----------------------------------------------
-# void timing_perfect_delay(uint32_t decamicros);
-# Make a delay for 10 * 'decamicros' microsecs
+# void timing_perfect_delay(uint32_t tenusec);
+# Make a delay for 10 * 'tenusec' usecs
 # -----------------------------------------------
 
 .syntax unified
@@ -33,7 +33,7 @@ timing_perfect_delay:
     cmp r0, 0       
     beq .exit      
 
-    ldr r2, =decamcs_n_cycles
+    ldr r2, =tenusec_n_cycles
     ldr r1, [r2]
 
     .cycle:
@@ -56,6 +56,6 @@ timing_perfect_delay:
     bx lr     
 
 # CPU_FREQ == 48000000
-# decamcs_n_cycles = (CPU_FREQ) / (1000000 * 5)
+# tenusec_n_cycles = (CPU_FREQ) / (1000000 * 5)
 #                                            ^ CPU cycles per inner loop cycle
-decamcs_n_cycles:       .word 96
+tenusec_n_cycles:       .word 96

@@ -24,7 +24,7 @@ static void board_clocking_init(void);
 static void gpio_init_led(void);
 static int enable_psychosound(void);
 
-extern void timing_perfect_delay(uint32_t decamicros);
+extern void timing_perfect_delay(uint32_t tenusec);
 
 //=========================================================
 
