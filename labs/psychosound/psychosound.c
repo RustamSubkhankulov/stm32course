@@ -15,13 +15,16 @@
 #define BLUE_LED_GPIOC_PIN  8U
 #define GREEN_LED_GPIOC_PIN 9U
 
+#define FREQ_STEP 100U
+#define BUTTON_CHECK_RATE 1000U
+
 //=========================================================
 
 static void board_clocking_init(void);
 static void gpio_init_led(void);
 static int enable_psychosound(void);
 
-extern void timing_perfect_delay(uint32_t millis);
+extern void timing_perfect_delay(uint32_t decamicros);
 
 //=========================================================
 
@@ -125,25 +128,25 @@ static int enable_psychosound(void)
         err = button_update(&down);
         if (err < 0) return err;
 
-        if ((tick % 1000) == 0)
+        if ((tick % BUTTON_CHECK_RATE) == 0)
         {
             if (button_is_pressed(&up))
             {
-                if (buzzer.freq < BUZZER_MAX_FREQ - 100)
-                    buzzer.freq += 100;
+                if (buzzer.freq < BUZZER_MAX_FREQ - FREQ_STEP)
+                    buzzer.freq += FREQ_STEP;
             }
 
             if (button_is_pressed(&down))
             {
-                if (buzzer.freq > 100)
-                    buzzer.freq -= 100;
+                if (buzzer.freq >= FREQ_STEP)
+                    buzzer.freq -= FREQ_STEP;
             }
         }
 
         err = buzzer_do_routine(&buzzer, tick);
         if (err < 0) return err;
 
-        seg7.number = buzzer.freq / 10;
+        seg7.number = buzzer.freq;
 
         err = seg7_select_digit(&seg7, (tick % 4));
         if (err < 0) return err;

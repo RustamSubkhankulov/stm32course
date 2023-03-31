@@ -33,7 +33,7 @@ timing_perfect_delay:
     cmp r0, 0       
     beq .exit      
 
-    ldr r2, =mcs_n_cycles
+    ldr r2, =decamcs_n_cycles
     ldr r1, [r2]
 
     .cycle:
@@ -56,7 +56,6 @@ timing_perfect_delay:
     bx lr     
 
 # CPU_FREQ == 48000000
-# due to various CPU optimizations mcs_n_cycles = (CPU_FREQ) / (1000000 * 5)
-#                                                                         ^ CPU cycles per inner loop cycle
-# mls_n_cycles:       .word 9600
-mcs_n_cycles:       .word 96
+# decamcs_n_cycles = (CPU_FREQ) / (1000000 * 5)
+#                                            ^ CPU cycles per inner loop cycle
+decamcs_n_cycles:       .word 96
