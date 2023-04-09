@@ -35,7 +35,8 @@ endif
 
 SOURCES = \
 	entry.S \
-	uart.c
+	uart.c \
+	main.c 
 
 OBJECTS_HALFWAY_DONE = $(SOURCES:%.c=build/%.o)
 OBJECTS              = $(OBJECTS_HALFWAY_DONE:%.S=build/%.o)
@@ -86,7 +87,8 @@ gdb: FORCE $(BINARY_FLASH)
 	arm-none-eabi-gdb $(GDB_FLAGS)
 
 uart: FORCE
+	- rm -f minicom.log 
 	sudo cp minirc.stm32f051 /etc/minicom/
-	sudo minicom -D /dev/ttyUSB0 stm32f051
+	sudo minicom -D /dev/ttyUSB0 stm32f051 -C minicom.log
 
 FORCE:

@@ -1,178 +1,257 @@
-#include <stdint.h>
-#include <stddef.h>
+#include <stdlib.h>
+#include <stdbool.h>
 
-//---------------
-// RCC Registers
-//---------------
+//---------------------------------------------------------
 
-#define REG_RCC_CR      (volatile uint32_t*)(uintptr_t)0x40021000U // Clock Control Register
-#define REG_RCC_CFGR    (volatile uint32_t*)(uintptr_t)0x40021004U // PLL Configuration Register
-#define REG_RCC_AHBENR  (volatile uint32_t*)(uintptr_t)0x40021014U // AHB1 Peripheral Clock Enable Register
-#define REG_RCC_APB2ENR (volatile uint32_t*)(uintptr_t)0x40021018U // APB1 Peripheral Clock Enable Register
-#define REG_RCC_CFGR2   (volatile uint32_t*)(uintptr_t)0x4002102CU // Clock configuration register 2
-#define REG_RCC_CFGR3   (volatile uint32_t*)(uintptr_t)0x40021030U // Clock configuration register 2
+#include "inc/uart.h"
+#include "inc/gpio.h"
+#include "inc/rcc.h"
+#include "uart.h"
 
-//----------------
-// GPIO Registers
-//----------------
+//=========================================================
 
-#define GPIOA_MODER   (volatile uint32_t*)(uintptr_t)0x48000000U // GPIO port mode register
-#define GPIOA_OSPEEDR (volatile uint32_t*)(uintptr_t)0x48000008U // GPIO port output speed register
-#define GPIOA_AFRH    (volatile uint32_t*)(uintptr_t)0x48000024U // GPIO alternate function high register
+static const uint32_t UARTx_addr[8] = { USART1, USART2, USART3, USART4,
+                                        USART5, USART6, USART7, USART8 };
 
-#define GPIOC_MODER   (volatile uint32_t*)(uintptr_t)0x48000800U // GPIO port mode register
-#define GPIOC_TYPER   (volatile uint32_t*)(uintptr_t)0x48000804U // GPIO port output type register
+//---------------------------------------------------------
 
-//----------------
-// UART Registers
-//----------------
+static void uart_gpio_setup(struct Uart* uart, uint8_t af_tx, uint8_t af_rx);
+static void uart_usart_setup(struct Uart* uart, size_t baudrate, size_t frequency);
 
-#define USART1_CR1 (volatile uint32_t*)(uintptr_t)0x40013800U // Control register 1
-#define USART1_CR2 (volatile uint32_t*)(uintptr_t)0x40013804U // Control register 2
-#define USART1_BRR (volatile uint32_t*)(uintptr_t)0x4001380CU // Baud rate register
-#define USART1_ISR (volatile uint32_t*)(uintptr_t)0x4001381CU // Interrupt and status register
-#define USART1_TDR (volatile uint32_t*)(uintptr_t)0x40013828U // Transmit data register
+//=========================================================
 
-//-------------------
-// RCC configuration
-//-------------------
-
-#define CPU_FREQENCY 48000000U // CPU frequency: 48 MHz
-#define ONE_MILLISECOND CPU_FREQENCY/1000U
-
-void board_clocking_init()
+int uart_setup(struct Uart* uart, uint16_t uartno, const struct Port_n_pin* tx, uint8_t af_tx,
+                                                   const struct Port_n_pin* rx, uint8_t af_rx,
+                                                   size_t baudrate, size_t frequency)
 {
-    // (1) Clock HSE and wait for oscillations to setup.
-    *REG_RCC_CR = 0x00010000U;
-    while ((*REG_RCC_CR & 0x00020000U) != 0x00020000U);
+    if (uart == NULL)
+        return UART_INV_PTR;
 
-    // (2) Configure PLL:
-    // PREDIV output: HSE/2 = 4 MHz
-    *REG_RCC_CFGR2 |= 1U;
+    if (tx == NULL || rx == NULL)
+        return UART_INV_ARG;
 
-    // (3) Select PREDIV output as PLL input (4 MHz):
-    *REG_RCC_CFGR |= 0x00010000U;
+    uart->uartno = uartno;
+    uart->UARTx = UARTx_addr[uartno - 1];
+    uart->tx = *tx;
+    uart->rx = *rx;
 
-    // (4) Set PLLMUL to 12:
-    // SYSCLK frequency = 48 MHz
-    *REG_RCC_CFGR |= (12U-2U) << 18U;
+    uart_gpio_setup(uart, af_tx, af_rx);
+    uart_usart_setup(uart, baudrate, frequency);
 
-    // (5) Enable PLL:
-    *REG_RCC_CR |= 0x01000000U;
-    while ((*REG_RCC_CR & 0x02000000U) != 0x02000000U);
-
-    // (6) Configure AHB frequency to 48 MHz:
-    *REG_RCC_CFGR |= 0b000U << 4U;
-
-    // (7) Select PLL as SYSCLK source:
-    *REG_RCC_CFGR |= 0b10U;
-    while ((*REG_RCC_CFGR & 0xCU) != 0x8U);
-
-    // (8) Set APB frequency to 48 MHz
-    *REG_RCC_CFGR |= 0b000U << 8U;
+    return 0;
 }
 
-//--------------------
-// GPIO configuration
-//--------------------
+//---------------------------------------------------------
 
-void board_gpio_init()
+static void uart_gpio_setup(struct Uart* uart, uint8_t af_tx, uint8_t af_rx)
 {
-    // (1) Configure PC8 as LED
-    *REG_RCC_AHBENR |= (1U << 19U);
+    uint8_t bit_tx = REG_RCC_AHBENR_IOPAEN + (uart->tx.port - GPIOA) / GPIO_offs;
+    uint8_t bit_rx = REG_RCC_AHBENR_IOPAEN + (uart->rx.port - GPIOA) / GPIO_offs;
 
-    // Configure PC8 mode:
-    *GPIOC_MODER |= (0b01U << (2U * 8U));
+    SET_BIT(REG_RCC_AHBENR, bit_tx);
+    SET_BIT(REG_RCC_AHBENR, bit_rx);
 
-    // Configure PC8 type:
-    *GPIOC_TYPER |= (0U << 8U);
+    SET_GPIO_AF(uart->tx.port, uart->tx.pin, af_tx);
+    SET_GPIO_AF(uart->rx.port, uart->rx.pin, af_rx);
 
-    // (2) Configure pins PA9 and PA10 for UART
-    *REG_RCC_AHBENR |= (1U << 17U);
+    SET_GPIO_OSPEED(uart->tx.port, uart->tx.pin, GPIO_OSPEED_HIGH);
+    SET_GPIO_OSPEED(uart->rx.port, uart->rx.pin, GPIO_OSPEED_HIGH);
 
-    // Set alternate functions:
-    *GPIOA_AFRH |= (1U << 4U * ( 9U - 8U));
-    *GPIOA_AFRH |= (1U << 4U * (10U - 8U));
+    SET_GPIO_IOMODE(uart->tx.port, uart->tx.pin, GPIO_IOMODE_ALT_FUNC);
+    SET_GPIO_IOMODE(uart->rx.port, uart->rx.pin, GPIO_IOMODE_ALT_FUNC);
 
-    // Configure pin operating speed:
-    *GPIOA_OSPEEDR |= (0b11U << (2U *  9U));
-    *GPIOA_OSPEEDR |= (0b11U << (2U * 10U));
-
-    // Configure mode register:
-    *GPIOA_MODER |= (0b10U << (2U *  9U));
-    *GPIOA_MODER |= (0b10U << (2U * 10U));
+    return;
 }
 
-//--------------------
-// GPIO configuration
-//--------------------
+//---------------------------------------------------------
 
-void uart_init(size_t baudrate, size_t frequency)
+static void uart_usart_setup(struct Uart* uart, size_t baudrate, size_t frequency)
 {
-    // (1) Configure USART1 clocking:
-    *REG_RCC_APB2ENR |= (1U << 14U);
-    *REG_RCC_CFGR3   |= 0b00U;
 
-    // (2) Set USART1 parameters:
-    uint32_t reg_usart_cr1 = 0U;
-    uint32_t reg_usart_cr2 = 0U;
-
-    reg_usart_cr1 |= 0x00000000U;  // Data length: 8 bits
-    reg_usart_cr1 |=  (0U << 15U); // Use oversampling by 16
-    reg_usart_cr1 &= ~(1U << 10U); // Parity control: disabled
-    reg_usart_cr1 |=  (1U <<  3U); // Transmitter: enabled
-
-    reg_usart_cr2 |= (0U << 19U);    // Endianness: LSB first
-    reg_usart_cr2 |= (0b10U << 12U); // Number of stop bits: 2 stop bit
-
-    *USART1_CR1 = reg_usart_cr1;
-    *USART1_CR2 = reg_usart_cr2;
-
-    // (3) Configure USART baud rate:
-    uint32_t usartdiv = (frequency + baudrate/2)/baudrate;
-
-    *USART1_BRR = usartdiv;
-
-    // (4) Enable UART:
-    *USART1_CR1 |= (1U << 0U);
-
-    // (5) Wait for TX to enable:
-    while ((*USART1_ISR & (1U << 21U)) == 0U);
-}
-
-void uart_send_byte(char sym)
-{
-    // Wait for TXE:
-    while ((*USART1_ISR & (1U <<  7U)) == 0U);
-
-    // Put data into DR:
-    *USART1_TDR = sym;
-}
-
-void print_string(const char* buf)
-{
-    for (size_t i = 0; buf[i] != '\0'; i++)
+    switch (uart->uartno)
     {
-        uart_send_byte(buf[i]);
+        case 1:
+        {
+            SET_BIT(REG_RCC_APB2ENR, REG_RCC_APB2ENR_USART1EN);
+            SET_REG_RCC_CFGR3_USART1SW(REG_RCC_CFGR3_USARTSW_PCLK); 
+            break;
+        }
+
+        case 2:
+        {
+            SET_BIT(REG_RCC_APB1ENR, REG_RCC_APB1ENR_USART2EN);
+            SET_REG_RCC_CFGR3_USART2SW(REG_RCC_CFGR3_USARTSW_PCLK); 
+            break;
+        }
+
+        default: break;
     }
+
+    CLEAR_BIT(USART_CR1(uart->UARTx), USART_CR1_M0);    // 1 Start bit, 8 data bits
+    CLEAR_BIT(USART_CR1(uart->UARTx), USART_CR1_M1);    
+    CLEAR_BIT(USART_CR1(uart->UARTx), USART_CR1_OVER8); // Oversampling by 16
+    CLEAR_BIT(USART_CR1(uart->UARTx), USART_CR1_PCE);   // Parity control disabled
+    // SET_BIT(USART_CR1(uart->UARTx), USART_CR1_TE);      // Transmitter: enabled
+
+    CLEAR_BIT(USART_CR2(uart->UARTx), USART_CR2_MSBFIRST); // Endianness: LSB first
+    SET_USART_CR2_STOP(uart->UARTx, USART_CR2_STOP_2);     // Number of stop bits: 2 stop bit
+
+    SET_USART_BRR(uart->UARTx, (frequency) / (baudrate));
+
+    SET_BIT(USART_CR1(uart->UARTx), USART_CR1_UE);
+
+    // while (CHECK_BIT(USART_ISR(uart->UARTx), USART_ISR_TEACK) == 0U)
+    //     continue;
 }
 
-//------
-// Main
-//------
+//---------------------------------------------------------
 
-#define UART_BAUDRATE 9600
-#define UART_BAUDRATE_FIX -300
-
-int main()
+int uart_transmit_enable(struct Uart* uart)
 {
-    board_clocking_init();
+    if (uart == NULL)
+        return UART_INV_PTR;
 
-    board_gpio_init();
+    SET_BIT(USART_CR1(uart->UARTx), USART_CR1_TE);
 
-    uart_init(UART_BAUDRATE + UART_BAUDRATE_FIX, CPU_FREQENCY);
+    while (CHECK_BIT(USART_ISR(uart->UARTx), USART_ISR_TEACK) == 0U)
+        continue;
 
-    print_string("Hello, world!\r");
+    return 0;
+}
 
-    while (1);
+//---------------------------------------------------------
+
+int uart_receive_enable(struct Uart* uart)
+{
+    if (uart == NULL)
+        return UART_INV_PTR;
+
+    SET_BIT(USART_CR1(uart->UARTx), USART_CR1_RE);
+
+    while (CHECK_BIT(USART_ISR(uart->UARTx), USART_ISR_REACK) == 0U)
+        continue;
+
+    return 0;
+}
+
+//---------------------------------------------------------
+
+int uart_send_byte(struct Uart* uart, uint8_t data, bool wait_tc)
+{
+    if (uart == NULL)
+        return UART_INV_PTR;
+
+    while (CHECK_BIT(USART_ISR(uart->UARTx), USART_ISR_TXE) == 0U)
+        continue;
+
+    *USART_TDR(uart->UARTx) = data;
+
+    if (wait_tc)
+    {
+        while (CHECK_BIT(USART_ISR(uart->UARTx), USART_ISR_TC) == 0U)
+           continue;
+    }
+
+    return 0;
+}
+
+//---------------------------------------------------------
+
+int uart_recv_byte(struct Uart* uart, uint8_t* data, bool wait_rxne)
+{
+    if (uart == NULL)
+        return UART_INV_PTR;
+
+    if (data == NULL)   
+        return UART_INV_ARG;
+
+    bool rxne = false;
+
+    if (wait_rxne)
+    {
+        while (CHECK_BIT(USART_ISR(uart->UARTx), USART_ISR_RXNE) == 0U)
+            continue;
+    
+        rxne = true;
+    }
+    else 
+    {
+        if (CHECK_BIT(USART_ISR(uart->UARTx), USART_ISR_RXNE) != 0U)
+            rxne = true;
+    }
+
+    if (rxne == true)
+    {
+        *data = (uint8_t) (*USART_RDR(uart->UARTx));
+        return 0;
+    }
+
+    return UART_NO_RECV;
+}
+
+//---------------------------------------------------------
+
+int uart_recv_string(struct Uart* uart, uint8_t* data)
+{
+    uint8_t value = 0;
+
+    do
+    {
+        int err = uart_recv_byte(uart, &value, true);
+        if (err < 0) return err;
+
+        *data = value;
+        data++;
+
+    } while (value != '\n');
+
+    return 0;
+}
+
+//---------------------------------------------------------
+
+int uart_recv_string_n(struct Uart* uart, uint8_t* data, unsigned n)
+{
+    unsigned ct = 0;
+
+    while (ct < n)
+    {
+        uint8_t value = 0;
+        
+        int err = uart_recv_byte(uart, &value, true);
+        if (err < 0) return err;
+
+        // uart_send_byte(uart, value, false);
+
+        data[ct] = value;
+        
+        if (value == '\r')
+        {
+            data[ct] = '\0';
+            break;
+        }
+
+        ct++;
+    }
+
+    return 0;
+}
+
+//---------------------------------------------------------
+
+int uart_send_string(struct Uart* uart, const char* string, bool wait_tc)
+{
+    for (size_t iter = 0; string[iter] != '\0'; iter++)
+    {
+        int res = uart_send_byte(uart, (uint8_t) string[iter], false);
+        if (res < 0) return res;
+    }
+
+    if (wait_tc)
+    {
+        while (CHECK_BIT(USART_ISR(uart->UARTx), USART_ISR_TC) == 0U)
+           continue;
+    }
+
+    return 0;
 }
