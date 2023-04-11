@@ -14,7 +14,7 @@ static const uint32_t Saturation_max  = 12U;
 static const uint32_t Top_edge = 10U;
 static const uint32_t Btm_edge = 2U;
 
-//=========================================================
+//---------------------------------------------------------
 
 static void button_gpio_setup(struct Button* button);
 

@@ -201,7 +201,7 @@ void systick_handler(void)
 
     static unsigned iter = 0;
 
-    if ((handler_ticks % 10) == 0)
+    if ((handler_ticks % 2) == 0)
     {   
         Seg7.number = Buzzer.freq;
         seg7_select_digit(&Seg7, (iter % 4));
@@ -215,9 +215,7 @@ void systick_handler(void)
 
 static int enable_psychosound(void)
 {
-    int err = 0;
-
-    err = seg7_setup(&Seg7, GPIOA);
+    int err = seg7_setup(&Seg7, GPIOA);
     if (err < 0) return err;
 
     unsigned freq = 0;
@@ -232,7 +230,7 @@ static int enable_psychosound(void)
     if (err < 0) return err;
 
     while (1)
-        continue;
+        continue; // TODO WFI
 
     return 0;
 }

@@ -20,7 +20,7 @@ struct Seg7Display
     uint16_t number;
 };
 
-enum Seg7Error
+enum Seg7_error
 {
     SEG7_INV_PTR  = -1,
     SEG7_INV_GPIO = -2,

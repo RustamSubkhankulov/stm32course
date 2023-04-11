@@ -17,7 +17,7 @@ struct Button
     bool is_pressed;
 };
 
-enum ButtonError
+enum Button_error
 {
     BTN_INV_PTR  = -1,
     BTN_INV_GPIO = -2,

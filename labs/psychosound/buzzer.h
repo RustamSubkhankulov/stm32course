@@ -20,7 +20,7 @@ struct Buzzer
     bool state;
 };
 
-enum buzzerError
+enum Buzzer_error
 {
     BZR_INV_PTR  = -1,
     BZR_INV_GPIO = -2,

@@ -127,8 +127,7 @@ static void systick_init(uint32_t period_us)
     *SYSTICK_RVR = (reload_value - 1U);
 
     // // Clear the current value:
-    // SYSTICK_SET_CURRENT(0);
-    *SYSTICK_CVR = 0;
+    SYSTICK_SET_CURRENT(0);
 
     // // Program the CSR:
 
